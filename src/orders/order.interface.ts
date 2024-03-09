@@ -1,8 +1,12 @@
 import { UnitProduct } from "../products/product.interface";
 
+export enum ORDER_STATUS {
+  "NEW",
+  "PAID",
+}
 export interface OrderProduct extends UnitProduct {
   quantity: number;
-  replaced_with: UnitProduct;
+  replaced_with: UnitProduct | null;
 }
 
 export interface Amount {
@@ -18,15 +22,10 @@ export interface Order {
   amount: Amount;
 }
 
-export interface UnitOrder extends Order{
+export interface UnitOrder extends Order {
   id: string;
 }
 
 export interface Orders {
-  [key : string] : UnitOrder
-}
-
-export enum ORDER_STATUS {
-  "NEW",
-  "PAID"
+  [key: string]: UnitOrder;
 }

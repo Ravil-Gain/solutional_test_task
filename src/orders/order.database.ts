@@ -1,10 +1,15 @@
 import fs from "fs";
 import { calculateOrderAmounts } from "../util";
-import { UnitProduct } from "../products/product.interface";
+import { Product, UnitProduct } from "../products/product.interface";
 import * as products_database from "../products/product.database";
-import { ORDER_STATUS, Orders, UnitOrder } from "./order.interface";
+import {
+  ORDER_STATUS,
+  OrderProduct,
+  Orders,
+  UnitOrder,
+} from "./order.interface";
 
-const path = "./orders.json";
+const path = "./data/orders.json";
 let orders: Orders = loadOrders();
 
 function loadOrders(): Orders {
@@ -57,8 +62,6 @@ export const create = async (): Promise<UnitOrder | null> => {
   // add created order to orders and save it
   orders[id] = order;
   saveOrders();
-  console.log(orders);
-
   return order;
 };
 
@@ -75,30 +78,49 @@ export const changeStatus = async (
 
 export const addProducts = async (
   id: string,
-  productsIds: [Number]
+  productsIds: [number]
 ): Promise<UnitOrder | null | undefined> => {
-  try {
-    const order: UnitOrder = await findOne(id);
-    // check if no order
-    const newProducts: UnitProduct[] = (await products_database.findAll()).filter(
-      (p) => productsIds.includes(p.id)
-    );
-    // check if no products
-    // and add existing products
-    const newSetProducts = [order.products];
-    newProducts.map((p)=>{
-      if (order.products[p.id]) {
-        // order.products[p.id].
-      } else {
-        newSetProducts.push(Object.values(p));
-      }
-    })
-    // order.products = newProducts;
+  const order: UnitOrder = await findOne(id);
+  // check if no order
 
-    order.amount = calculateOrderAmounts(order.products);
-    saveOrders();
-    return order;
-  } catch (error) {}
+  const orderProducts: OrderProduct[] = order.products;
+  productsIds.map(async (prod) => {
+    const orderProduct = orderProducts.find((v) => v.product_id === prod);
+    if (!orderProduct) {
+      const newOrderProduct: Product = await products_database.findOne(prod);
+      if (newOrderProduct) {
+        orderProducts.push({
+          id: "",
+          quantity: 1,
+          replaced_with: null,
+          ...newOrderProduct,
+        });
+      }
+    } else {
+      orderProduct.quantity = +1;
+    }
+  });
+
+  // const newProducts: UnitProduct[] = (await products_database.findAll()).filter(
+  //   (p) => productsIds.includes(p.id)
+  // );
+  // check if no products
+  // and add existing products
+  // const newSetProducts = [order.products];
+  // newProducts.map((p) => {
+  //   if (order.products[p.id]) {
+  //     // order.products[p.id].
+  //   } else {
+  //     newSetProducts.push(Object.values(p));
+  //   }
+  // });
+  
+  order.products = orderProducts;
+
+  order.amount = calculateOrderAmounts(order.products);
+  saveOrders();
+  return order;
+
   //   (p) => productsIds.includes(p.id)
   // );
 

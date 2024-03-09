@@ -1,5 +1,5 @@
 import { Amount } from "./orders/order.interface";
-import { Product, Products } from "./products/product.interface";
+import { Product } from "./products/product.interface";
 
 export function calculateOrderAmounts(products: Product[]): Amount {
   const calculated: Amount = {

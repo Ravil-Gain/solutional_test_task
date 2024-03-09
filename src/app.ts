@@ -1,9 +1,9 @@
-import express from "express"
-import * as dotevnv from "dotenv"
 import cors from "cors"
 import helmet from "helmet"
-import { productRouter } from "./products/product.routes"
+import express from "express"
+import * as dotevnv from "dotenv"
 import { orderRouter } from "./orders/order.routes"
+import { productRouter } from "./products/product.routes"
 
 dotevnv.config()
 
@@ -16,6 +16,7 @@ app.use(express.urlencoded({extended : true}))
 app.use(cors())
 app.use(helmet())
 
+// API Routes
 app.use('/products', productRouter)
 app.use('/orders', orderRouter)
 

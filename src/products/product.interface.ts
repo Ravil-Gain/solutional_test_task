@@ -5,7 +5,7 @@ export interface Product {
 }
 
 export interface UnitProduct extends Product {
-  id: number;
+  id: string;
 }
 
 export interface Products {

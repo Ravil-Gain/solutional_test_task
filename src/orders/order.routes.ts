@@ -126,7 +126,7 @@ orderRouter.post("/:id/products", async (req: Request, res: Response) => {
 
 
 
-    return res.status(StatusCodes.OK).json(order.products);
+    // return res.status(StatusCodes.OK).json(order.products);
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
   }

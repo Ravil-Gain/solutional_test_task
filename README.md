@@ -5,3 +5,5 @@ Its a Node.js app with Express as the main framework, and TypeScript. Applicatio
 After cloning the repository open terminal run ```npm install``` and ```npm run dev```
 
 This application uses local storage as database, with help of fs library. In future can be replaced with actual database(simply replacing .database.ts files).
+
+App Impliments e2e-testing you can check it running ```npm install``` and ```npm test```

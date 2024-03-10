@@ -7,8 +7,6 @@ import { productRouter } from "./products/product.routes"
 
 dotevnv.config()
 
-const PORT = parseInt(process.env.PORT as string, 10) || 7000
-
 const app = express()
 
 app.use(express.json())
@@ -17,9 +15,7 @@ app.use(cors())
 app.use(helmet())
 
 // API Routes
-app.use('/products', productRouter)
-app.use('/orders', orderRouter)
+app.use('/api/products', productRouter)
+app.use('/api/orders', orderRouter)
 
-app.listen(PORT, () => {
-    console.log(`Server is listening on port ${PORT}`)
-})
+export default app;

@@ -1,6 +1,6 @@
 import fs from "fs";
-import { calculateOrderAmounts } from "../util";
-import { Product, UnitProduct } from "../products/product.interface";
+import { calculateOrderAmounts, calculatePaidOrderAmounts } from "../util";
+import { UnitProduct } from "../products/product.interface";
 import * as products_database from "../products/product.database";
 import {
   ORDER_STATUS,
@@ -9,6 +9,7 @@ import {
   UnitOrder,
 } from "./order.interface";
 
+const uuid = require("uuid");
 const path = "./data/orders.json";
 let orders: Orders = loadOrders();
 
@@ -37,13 +38,11 @@ export const findOne = async (id: string): Promise<UnitOrder> => orders[id];
 
 export const create = async (): Promise<UnitOrder | null> => {
   // Check for unique ID
-  const uuid = require("uuid");
-
-  let id = uuid.v1();
+  let id = uuid.v4();
   let check_order = await findOne(id);
 
   while (check_order) {
-    id = uuid.v1();
+    id = uuid.v4();
     check_order = await findOne(id);
   }
 
@@ -56,7 +55,7 @@ export const create = async (): Promise<UnitOrder | null> => {
       returns: "0.00",
       total: "0.00",
     },
-    status: ORDER_STATUS.NEW,
+    status: ORDER_STATUS.new,
   };
 
   // add created order to orders and save it
@@ -70,7 +69,8 @@ export const changeStatus = async (
   newStatus: ORDER_STATUS
 ): Promise<UnitOrder | null> => {
   const order = await findOne(id);
-  // here should be different validations status
+  if (newStatus === "PAID") order.amount.paid = order.amount.total;
+
   order.status = newStatus;
   saveOrders();
   return order;
@@ -81,57 +81,79 @@ export const addProducts = async (
   productsIds: [number]
 ): Promise<UnitOrder | null | undefined> => {
   const order: UnitOrder = await findOne(id);
-  // check if no order
-
-  const orderProducts: OrderProduct[] = order.products;
-  productsIds.map(async (prod) => {
+  const orderProducts: OrderProduct[] = [];
+  // iterate through products and add it or increase quantity
+  await productsIds.map(async (prod) => {
     const orderProduct = orderProducts.find((v) => v.product_id === prod);
     if (!orderProduct) {
-      const newOrderProduct: Product = await products_database.findOne(prod);
-      if (newOrderProduct) {
+      const orderNewProduct: UnitProduct = await products_database.findOne(
+        prod
+      );
+      if (orderNewProduct) {
         orderProducts.push({
-          id: "",
+          name: orderNewProduct.name,
+          price: orderNewProduct.price,
+          id: uuid.v4(),
+          product_id: Number(orderNewProduct.id),
           quantity: 1,
           replaced_with: null,
-          ...newOrderProduct,
-        });
+        } as OrderProduct);
       }
     } else {
       orderProduct.quantity = +1;
     }
   });
 
-  // const newProducts: UnitProduct[] = (await products_database.findAll()).filter(
-  //   (p) => productsIds.includes(p.id)
-  // );
-  // check if no products
-  // and add existing products
-  // const newSetProducts = [order.products];
-  // newProducts.map((p) => {
-  //   if (order.products[p.id]) {
-  //     // order.products[p.id].
-  //   } else {
-  //     newSetProducts.push(Object.values(p));
-  //   }
-  // });
-  
+  order.amount = calculateOrderAmounts(order.amount, orderProducts);
   order.products = orderProducts;
+  orders[order.id] = order;
 
-  order.amount = calculateOrderAmounts(order.products);
   saveOrders();
   return order;
-
-  //   (p) => productsIds.includes(p.id)
-  // );
-
-  // if (!products.length) {
-  //   return res
-  //     .status(StatusCodes.NOT_FOUND)
-  //     .json({ error: `Error resolving ProductIds` });
-  // }
-
-  // order.amount = calculateOrderAmounts(products);
-  // order.products = products;
 };
 
-// extendProducts
+export const changeQuantity = async (
+  orderId: string,
+  order_product_id: string,
+  newQuantity: number
+): Promise<boolean> => {
+  const order = await findOne(orderId);
+  order.products.filter((p) => p.id === order_product_id)[0].quantity =
+    newQuantity;
+  order.amount = calculateOrderAmounts(order.amount, order.products);
+
+  orders[order.id] = order;
+  saveOrders();
+  return false;
+};
+
+export const replaceProduct = async (
+  orderId: string,
+  productId: string,
+  replaceProductId: number,
+  replacequantity: number
+): Promise<boolean> => {
+  const order = await findOne(orderId);
+  order.products.find((p) => p.id === productId);
+
+  const replaceProduct: UnitProduct = await products_database.findOne(
+    replaceProductId
+  );
+  const replaceProductObject = {
+    name: replaceProduct.name,
+    price: replaceProduct.price,
+    id: uuid.v4(),
+    product_id: Number(replaceProduct.id),
+    quantity: replacequantity,
+    replaced_with: null,
+  } as OrderProduct;
+
+  order.products.filter((p) => p.id === productId)[0].replaced_with =
+    replaceProductObject;
+
+  order.amount = calculatePaidOrderAmounts(order.amount, replaceProductObject);
+  orders[order.id] = order;
+
+  saveOrders();
+  return false;
+};

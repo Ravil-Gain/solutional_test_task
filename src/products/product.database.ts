@@ -1,4 +1,4 @@
-import { Product, Products, UnitProduct } from "./product.interface";
+import { Products, UnitProduct } from "./product.interface";
 import fs from "fs";
 
 let products: Products = loadProducts();
@@ -16,4 +16,4 @@ function loadProducts(): Products {
 export const findAll = async (): Promise<UnitProduct[]> =>
   Object.values(products);
 
-export const findOne = async (id: number): Promise<Product> => products[id];
+export const findOne = async (id: number): Promise<UnitProduct> => products[id];
